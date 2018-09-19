@@ -163,8 +163,8 @@
 #include <stdbool.h>
 #include "Lander_Control.h"
 
-void Exception();
-void handelLeftThursterFailTurn(); 
+void Exception(double, double);
+void handelLeftThursterFail(double, double); 
 
 void Lander_Control(void)
 {
@@ -255,6 +255,7 @@ void Lander_Control(void)
  // chunks, each of which works under particular failure conditions.
 
  if(MT_OK && RT_OK && LT_OK) {
+  failure = false;
   // Check for rotation away from zero degrees - Rotate first,
   // use thrusters only when not rotating to avoid adding
   // velocity components along the rotation directions
@@ -267,7 +268,8 @@ void Lander_Control(void)
    return;
   }
 } else {
-  Exception();
+  Exception(VXlim, VYlim);
+  failure = true;
   return;
  }
 
@@ -275,27 +277,33 @@ void Lander_Control(void)
  // and set thrusters appropriately.
  if (Position_X()>PLAT_X)
  {
-  // Lander is to the LEFT of the landing platform, use Right thrusters to move
-  // lander to the left.
-  Left_Thruster(0);	// Make sure we're not fighting ourselves here!
-  if (Velocity_X()>(-VXlim)) Right_Thruster((VXlim+fmin(0,Velocity_X()))/VXlim);
-  else
-  {
-   // Exceeded velocity limit, brake
-   Right_Thruster(0);
-   Left_Thruster(fabs(VXlim-Velocity_X()));
-  }
- }
- else
- {
-  // Lander is to the RIGHT of the landing platform, opposite from above
-  Right_Thruster(0);
-  if (Velocity_X()<VXlim) Left_Thruster((VXlim-fmax(0,Velocity_X()))/VXlim);
-  else
-  {
-   Left_Thruster(0);
-   Right_Thruster(fabs(VXlim-Velocity_X()));
-  }
+   // if there is everything works fine
+   if(!failure) {
+    // Lander is to the LEFT of the landing platform, use Right thrusters to move
+    // lander to the left.
+    Left_Thruster(0);	// Make sure we're not fighting ourselves here!
+    if (Velocity_X()>(-VXlim)) Right_Thruster((VXlim+fmin(0,Velocity_X()))/VXlim);
+    else
+    {
+     // Exceeded velocity limit, brake
+     Right_Thruster(0);
+     Left_Thruster(fabs(VXlim-Velocity_X()));
+    }
+   } else {
+    Exception(VXlim, VYlim);
+   }
+ } else {
+   if(!failure) {
+    // Lander is to the RIGHT of the landing platform, opposite from above
+    Right_Thruster(0);
+    if (Velocity_X()<VXlim) Left_Thruster((VXlim-fmax(0,Velocity_X()))/VXlim);
+    else {
+     Left_Thruster(0);
+     Right_Thruster(fabs(VXlim-Velocity_X()));
+    }
+   } else {
+     Exception(VXlim, VYlim);
+   }
  }
 
  // Vertical adjustments. Basically, keep the module below the limit for
@@ -433,12 +441,12 @@ void Safety_Override(void)
 /*
 This function handle all the engine or the sensor fail
 */
-void Exception() {
+void Exception(double VXlim, double VYlim) {
   // if the main thurster is not working
   if(!MT_OK) {
    
   } else if(!LT_OK) { // if the left thurster is not working
-   handelLeftThursterFailTurn();
+   handelLeftThursterFail(VXlim, VYlim);
   } else {
    
   }
@@ -447,9 +455,28 @@ void Exception() {
 /*
 This function turn the Lander right  
 */
-void handelLeftThursterFailTurn() {
+void handelLeftThursterFail(double VXlim, double VYlim) {
+ // turn the Lander to the right 45 degree
+ if (Angle() > 1 && Angle() < 359) {
+  if (Angle() <= 45) Rotate(45 - Angle());
+  else Rotate(-Angle());
+ }
+ if(Position_X()>PLAT_X) {
+  // Lander is to the LEFT of the landing platform, use Right thrusters to move
+  // lander to the left.
+  Main_Thruster(VXlim);	// Make sure we're not fighting ourselves here!
+  if (Velocity_X()>(-VXlim))
+   Right_Thruster((VXlim+fmin(0,Velocity_X()))/VXlim);
+  else {
+   // Exceeded velocity limit, brake
+   Right_Thruster(0);
+   Left_Thruster(fabs(VXlim-Velocity_X()));
+  }
+ } else {
+ }
+  /*
   if (Angle() > 1 && Angle() < 359) {
    if (Angle() <= 90) Rotate(90 - Angle());
    else Rotate(-Angle());
-  }
+  }*/
 }
