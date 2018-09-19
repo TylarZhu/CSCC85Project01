@@ -160,7 +160,7 @@
   Standard C libraries
 */
 #include <math.h>
-
+#include <stdbool.h>
 #include "Lander_Control.h"
 
 void Exception();
@@ -220,7 +220,7 @@ void Lander_Control(void)
 
  double VXlim;
  double VYlim;
- Boolean failure = False;
+ bool failure = false;
  /*
  printf("Normal: \n");
  printf("HX: ");
@@ -448,8 +448,8 @@ void Exception() {
 This function turn the Lander right  
 */
 void handelLeftThursterFailTurn() {
-  handelLeftThursterFail();
   if (Angle() > 1 && Angle() < 359) {
    if (Angle() <= 90) Rotate(90 - Angle());
    else Rotate(-Angle());
+  }
 }
