@@ -340,7 +340,7 @@ void Safety_Override(void)
   How this works:
   Check the sonar readings, for each sonar
   reading that is below a minimum safety threshold
-  AND in the general direction of motion AND
+  AND in the general direction of motion AND 
   not corresponding to the landing platform,
   carry out speed corrections using the thrusters
 **************************************************/
@@ -456,27 +456,33 @@ void Exception(double VXlim, double VYlim) {
 This function turn the Lander right  
 */
 void handelLeftThursterFail(double VXlim, double VYlim) {
- // turn the Lander to the right 45 degree
- if (Angle() > 1 && Angle() < 359) {
-  if (Angle() <= 45) Rotate(45 - Angle());
-  else Rotate(-Angle());
- }
+
  if(Position_X()>PLAT_X) {
+  if (Angle() > 1 && Angle() < 359) {
+  if (Angle() >= 180) Rotate(360-Angle());
+  else Rotate(-Angle());
+  }
   // Lander is to the LEFT of the landing platform, use Right thrusters to move
   // lander to the left.
-  Main_Thruster(VXlim);	// Make sure we're not fighting ourselves here!
+  Main_Thruster(0.5);
   if (Velocity_X()>(-VXlim))
    Right_Thruster((VXlim+fmin(0,Velocity_X()))/VXlim);
   else {
    // Exceeded velocity limit, brake
    Right_Thruster(0);
-   Left_Thruster(fabs(VXlim-Velocity_X()));
   }
  } else {
- }
-  /*
+   Right_Thruster(0.5);
+  // turn the Lander to the right 90 degree
   if (Angle() > 1 && Angle() < 359) {
    if (Angle() <= 90) Rotate(90 - Angle());
    else Rotate(-Angle());
-  }*/
+  }
+  if (Velocity_Y()>(-VXlim))
+   Main_Thruster((VXlim+fmin(0,Velocity_Y()))/VXlim);
+  else {
+   // Exceeded velocity limit, brake
+   Main_Thruster(0.0);
+  }
+ }
 }
