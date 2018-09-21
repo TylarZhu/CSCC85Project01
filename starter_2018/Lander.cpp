@@ -456,33 +456,28 @@ void Exception(double VXlim, double VYlim) {
 This function turn the Lander right  
 */
 void handelLeftThursterFail(double VXlim, double VYlim) {
-
- if(Position_X()>PLAT_X) {
-  if (Angle() > 1 && Angle() < 359) {
-  if (Angle() >= 180) Rotate(360-Angle());
+ if (Angle() > 1 && Angle() < 359) {
+  if (Angle() <= 45) Rotate(45-Angle());
   else Rotate(-Angle());
-  }
+ }
+ //turn the Lander 45 degree to the right
+ if(Position_X()>PLAT_X) {
   // Lander is to the LEFT of the landing platform, use Right thrusters to move
   // lander to the left.
-  Main_Thruster(0.5);
+  Right_Thruster(0.0);
+  if (Velocity_X()>(-VXlim))
+   Main_Thruster((VXlim+fmin(0,Velocity_X()))/VXlim);
+  else {
+   // Exceeded velocity limit, brake
+   Main_Thruster(0);
+  }
+ } else {
+   Main_Thruster(0.0);
   if (Velocity_X()>(-VXlim))
    Right_Thruster((VXlim+fmin(0,Velocity_X()))/VXlim);
   else {
    // Exceeded velocity limit, brake
-   Right_Thruster(0);
-  }
- } else {
-   Right_Thruster(0.5);
-  // turn the Lander to the right 90 degree
-  if (Angle() > 1 && Angle() < 359) {
-   if (Angle() <= 90) Rotate(90 - Angle());
-   else Rotate(-Angle());
-  }
-  if (Velocity_Y()>(-VXlim))
-   Main_Thruster((VXlim+fmin(0,Velocity_Y()))/VXlim);
-  else {
-   // Exceeded velocity limit, brake
-   Main_Thruster(0.0);
+   Right_Thruster(0.0);
   }
  }
 }

@@ -26,7 +26,7 @@ CCCFLAGS      = -c -g -O4
 # able to find libraries, check where they are installed in your system, and
 # add the appripriate -I and -L switches with the paths to include and lib 
 # directories where OpenGL stuff can be found.
-GL_LIBS       = -lGLU -lGL -lglut
+GL_LIBS       = -lGLU -lGL -lglut -L/usr/lib
 
 # Define location of X Windows libraries,  and the X11 library names
 #XLIBS         = -L/usr/X11R6/lib -L/usr/lib -lX11 
