@@ -140,10 +140,10 @@
         e.g.
 
              Lander_Control easy.ppm 3 1 5 8
-
-             Launches the program on the 'easy.ppm' map, and disables the main thruster,
-             vertical velocity sensor, and angle sensor.
-
+PIDX_realizeInc(PLAT_X) - PLAT_X)
+PIDX_realizeInc(PLAT_X) - PLAT_X)m' map, and disables the main thruster,
+PIDX_realizeInc(PLAT_X) - PLAT_X)sensor.
+PIDX_realizeInc(PLAT_X) - PLAT_X)
 		* Note - while running. Pressing 'q' on the keyboard terminates the 
 			program.
 
@@ -166,13 +166,82 @@
 void Exception(double, double);
 void handelLeftThursterFail(double, double); 
 
-void stay_zero_degree(void){
-  if (Angle() > 1 && Angle() < 359) {
-   if (Angle() >= 180) Rotate(360 - Angle());
-   else Rotate(-Angle());
-   return;
-  }
+typedef struct _pid{
+    double SetPosition;
+    double ActualPosition;
+    double err;
+    double err_last;
+    double err_next;
+    double Kp, Ki, Kd;
+    double voltage;
+    double integral;
+    double umax;
+    double umin;
+}Pid;
+
+Pid pidX,pidY;
+
+void  PIDX_init() {
+    pidX.SetPosition = 0.0;
+    pidX.ActualPosition = 0.0;
+    pidX.err = 0.0;
+    pidX.err_last = 0.0;
+    pidX.err_next = 0.0;
+    pidX.voltage = 0.0;
+    pidX.integral = 0.0;
+    pidX.Kp = 1;
+    pidX.Ki = 1;
+    pidX.Kd = 1;
+    pidX.umax = RT_ACCEL;
+    pidX.umin = 0.0;
 }
+
+void  PIDY_init() {
+    pidY.SetPosition = 0.0;
+    pidY.ActualPosition = 0.0;
+    pidY.err = 0.0;
+    pidY.err_last = 0.0;
+    pidY.err_next = 0.0;
+    pidY.voltage = 0.0;
+    pidY.integral = 0.0;
+    pidY.Kp = 1;
+    pidY.Ki = 1;
+    pidY.Kd = 1;
+    pidY.umax = MT_ACCEL;
+    pidY.umin = 0.0;
+}
+
+float PIDY_realizeInc(float optimalPosition){
+    pidY.ActualPosition = Position_Y();
+    pidY.SetPosition = optimalPosition;
+    pidY.err = pidY.SetPosition - pidY.ActualPosition;
+
+    float Vlimit = pidY.Kp * (pidY.err - pidY.err_next)
+                          + pidY.Ki * pidY.err 
+                          + pidY.Kd * (pidY.err - 2 * pidY.err_next + pidY.err_last);
+    
+    pidY.ActualPosition += Vlimit;
+    pidY.err_last = pidY.err_next;
+    pidY.err_next= pidY.err;
+    return pidY.ActualPosition;
+}
+
+float PIDX_realizeInc(float optimalPosition){
+    pidX.ActualPosition = Position_X();
+    pidX.SetPosition = optimalPosition;
+    pidX.err = pidX.SetPosition - pidX.ActualPosition;
+
+    float Vlimit = pidX.Kp * (pidX.err - pidX.err_next)
+                          + pidX.Ki * pidX.err 
+                          + pidX.Kd * (pidX.err - 2 * pidX.err_next + pidX.err_last);
+    
+    pidX.ActualPosition += Vlimit;
+    pidX.err_last = pidX.err_next;
+    pidX.err_next= pidX.err;
+    return pidX.ActualPosition;
+}
+
+
 
 void stay_X_degree(double X){
   if (fabs(Angle()-X) > 1) {
@@ -180,6 +249,10 @@ void stay_X_degree(double X){
    else Rotate(X - Angle());
    return;
   }
+}
+
+void stay_zero_degree(void){
+  stay_X_degree(0);
 }
 
 void turn_clock_X_Degree(double ang){
@@ -197,7 +270,7 @@ void move_left(double VXlim){
       Right_Thruster((VXlim+fmin(0,Velocity_X()))/VXlim);
   }
   else if ((Velocity_X()<VXlim) && (!RT_OK) && MT_OK) {
-      stay_X_degree(360-45);
+      stay_X_degree(360-90);
       Main_Thruster((VXlim-fmax(0,Velocity_X()))/VXlim);
       }
     else
@@ -218,7 +291,7 @@ void move_right(double VXlim){
         Left_Thruster((VXlim-fmax(0,Velocity_X()))/VXlim);
         }
     else if ((Velocity_X()<VXlim) && (!LT_OK) && MT_OK) {
-      stay_X_degree(45);
+      stay_X_degree(90);
       Main_Thruster((VXlim-fmax(0,Velocity_X()))/VXlim);
       }
     else {
@@ -227,9 +300,6 @@ void move_right(double VXlim){
     }
 
 }
-
-
-
 void Lander_Control(void)
 {
  /*
@@ -285,10 +355,10 @@ void Lander_Control(void)
  double VXlim;
  double VYlim;
  bool failure = false;
- /*
- printf("Normal: \n");
- printf("HX: ");
- printf("%.2f\n", Velocity_X());
+ /*PIDX_realizeInc
+ prPIDX_realizeInc: \n");
+ prPIDX_realizeInc;
+ prPIDX_realizeInc", Velocity_X());
  printf("VY: ");
  printf("%.2f\n", Velocity_Y());
  printf("position X:");
@@ -302,13 +372,19 @@ void Lander_Control(void)
  // move faster, decrease speed limits as the module
  // approaches landing. You may need to be more conservative
  // with velocity limits when things fail.
- if (fabs(Position_X()-PLAT_X)>200) VXlim=25;
- else if (fabs(Position_X()-PLAT_X)>100) VXlim=15;
- else VXlim=5;
 
- if (PLAT_Y-Position_Y()>200) VYlim=-20;
- else if (PLAT_Y-Position_Y()>100) VYlim=-10;  // These are negative because they
- else VYlim=-4;				       // limit descent velocity
+ VXlim = 25*fabs(PIDX_realizeInc(PLAT_X) - PLAT_X)/512;
+ VYlim = -10*fabs(PIDY_realizeInc(PLAT_Y) - PLAT_Y)/512;
+
+ printf("VXLim: ");
+ printf("%.2f\n", VXlim);
+ printf("VYLim: ");
+ printf("%.2f\n", VYlim);
+ printf("PositionX: ");
+ printf("%.2f\n", fabs(Position_X() - PLAT_X));
+ printf("PositionY: ");
+ printf("%.2f\n", fabs(Position_Y() - PLAT_Y));
+
 
  // Ensure we will be OVER the platform when we land
  if (fabs(PLAT_X-Position_X())/fabs(Velocity_X())>1.25*fabs(PLAT_Y-Position_Y())/fabs(Velocity_Y())) VYlim=0;
@@ -328,17 +404,19 @@ void Lander_Control(void)
 
  // Module is oriented properly, check for horizontal position
  // and set thrusters appropriately.
- if (Position_X()>PLAT_X)
- {
-    // Lander is to the LEFT of the landing platform, use Right thrusters to move
-    // lander to the left.
-    move_left(VXlim);
+ if ( fabs(Position_X()-PLAT_X) > 10){
+  if ( Position_X()>PLAT_X){
+      // Lander is to the LEFT of the landing platform, use Right thrusters to move
+      // lander to the left.
+      move_left(VXlim);
   
- } else {
-    // Lander is to the RIGHT of the landing platform, opposite from above
-    move_right(VXlim);
+  } else {
+      // Lander is to the RIGHT of the landing platform, opposite from above
+      move_right(VXlim);
+  }
+ }else{
+   stay_zero_degree();
  }
-
  // Vertical adjustments. Basically, keep the module below the limit for
  // vertical velocity and allow for continuous descent. We trust
  // Safety_Override() to save us from crashing with the ground.
