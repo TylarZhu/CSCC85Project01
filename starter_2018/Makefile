@@ -54,7 +54,7 @@ PROGRAM	          = Lander_Control
 CSRCS         =
 
 # Define all C++ source files here
-CPPSRCS       = Lander.cpp
+CPPSRCS       = MyLander.cpp
 
 ##############################################################################
 # Define additional rules that make should know about in order to compile our
