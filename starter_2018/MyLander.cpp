@@ -158,15 +158,18 @@ PIDX_realizeInc(PLAT_X) - PLAT_X)
 /*
   Standard C libraries
 */
-#include<stdio.h>
+#include <stdio.h>
 #include <math.h>
 #include <stdbool.h>
+#include <iostream>
 #include "Lander_Control.h"
+
+using namespace std;
 
 void Exception(double, double);
 void handelLeftThursterFail(double, double); 
 
-typedef struct _pid {
+struct PID{
     double SetPosition;
     double ActualPosition;
     double err;
@@ -177,39 +180,7 @@ typedef struct _pid {
     double integral;
     double umax;
     double umin;
-}Pid;
-
-Pid pidX,pidY;
-
-void  PIDX_init() {
-    pidX.SetPosition = 0.0;
-    pidX.ActualPosition = 0.0;
-    pidX.err = 0.0;
-    pidX.err_last = 0.0;
-    pidX.err_next = 0.0;
-    pidX.voltage = 0.0;
-    pidX.integral = 0.0;
-    pidX.Kp = 1;
-    pidX.Ki = 1;
-    pidX.Kd = 1;
-    pidX.umax = RT_ACCEL;
-    pidX.umin = 0.0;
-}
-
-void  PIDY_init() {
-    pidY.SetPosition = 0.0;
-    pidY.ActualPosition = 0.0;
-    pidY.err = 0.0;
-    pidY.err_last = 0.0;
-    pidY.err_next = 0.0;
-    pidY.voltage = 0.0;
-    pidY.integral = 0.0;
-    pidY.Kp = 1;
-    pidY.Ki = 1;
-    pidY.Kd = 1;
-    pidY.umax = MT_ACCEL;
-    pidY.umin = 0.0;
-}
+}pidX, pidY;
 
 float PIDY_realizeInc(float optimalPosition) {
     pidY.ActualPosition = Position_Y();
@@ -241,25 +212,16 @@ float PIDX_realizeInc(float optimalPosition) {
     return pidX.ActualPosition;
 }
 
-
-
 void stay_X_degree(double X) {
-    if (fabs(Angle()-X) > 1) {
-        if (Angle() >= X + 180) Rotate(360 - Angle() + X);
-        else Rotate(X - Angle());return;
-    }
+    if(Angle() >= X + 180) 
+        Rotate(360 - Angle() + X);
+    else 
+        Rotate(X - Angle());
+    return;
 }
 
 void stay_zero_degree(void) {
     stay_X_degree(0);
-}
-
-void turn_clock_X_Degree(double ang){
-    Rotate(ang);
-}
-
-void turn_counter_clock_X_Degree(double ang){
-    Rotate(-ang);
 }
 
 void move_left(double VXlim) {
@@ -277,7 +239,6 @@ void move_left(double VXlim) {
     }
 }
 
-
 void move_right(double VXlim) {
     Right_Thruster(0);
     if ((Velocity_X() < VXlim) && LT_OK) {
@@ -291,6 +252,7 @@ void move_right(double VXlim) {
         Right_Thruster(fabs(VXlim - Velocity_X()));
     }
 }
+
 void Lander_Control(void) {
     /*
     This is the main control function for the lander. It attempts
@@ -341,10 +303,9 @@ void Lander_Control(void) {
         ACCESS THE SIMULATION STATE. That's cheating,
         I'll give you zero.
     **************************************************/
-
     double VXlim;
     double VYlim;
-    bool failure = false;
+    
     /*PIDX_realizeInc
     prPIDX_realizeInc: \n");
     prPIDX_realizeInc;
@@ -377,8 +338,9 @@ void Lander_Control(void) {
 
 
     // Ensure we will be OVER the platform when we land
-    if (fabs(PLAT_X - Position_X()) / fabs(Velocity_X()) > 1.25 * fabs(PLAT_Y - Position_Y()) / fabs(Velocity_Y()))
-        VYlim=0;
+    if (fabs(PLAT_X - Position_X()) / fabs(Velocity_X()) > 1.25 * 
+        fabs(PLAT_Y - Position_Y()) / fabs(Velocity_Y()))
+        VYlim = 0;
 
     // IMPORTANT NOTE: The code below assumes all components working
     // properly. IT MAY OR MAY NOT BE USEFUL TO YOU when components
@@ -475,7 +437,7 @@ void Safety_Override(void)
     dmin=100000;
     if (Velocity_X() > 0)
     {
-        for (int i=5; i < 14; i++) {
+        for (int i = 5; i < 14; i++) {
             if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin) {
                 dmin = SONAR_DIST[i];
             }
@@ -489,7 +451,8 @@ void Safety_Override(void)
     // Determine whether we're too close for comfort. There is a reason
     // to have this distance limit modulated by horizontal speed...
     // what is it?
-    if (dmin<DistLimit*fmax(.25, fmin(fabs(Velocity_X()) / 5.0, 1))) { // Too close to a surface in the horizontal direction
+    if (dmin < DistLimit * fmax(.25, 
+                                fmin(fabs(Velocity_X()) / 5.0, 1))) { // Too close to a surface in the horizontal direction
         stay_zero_degree();
         if (Velocity_X() > 0){
             if (LT_OK && RT_OK){
