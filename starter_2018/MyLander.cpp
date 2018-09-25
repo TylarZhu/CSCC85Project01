@@ -212,44 +212,55 @@ float PIDX_realizeInc(float optimalPosition) {
     return pidX.ActualPosition;
 }
 
+
+
 void stay_X_degree(double X) {
-    if(Angle() >= X + 180) 
-        Rotate(360 - Angle() + X);
-    else 
-        Rotate(X - Angle());
+    if (fabs(Angle()-X) > 1) {
+        if (X >= 270 && Angle()<=90) Rotate(-Angle()+X-360);
+        else if (Angle() >= X + 180) Rotate(360 - Angle() + X);
+        else Rotate(X - Angle());
     return;
+    }
 }
 
-void stay_zero_degree(void) {
-    stay_X_degree(0);
+void stay_zero_degree(void){
+  stay_X_degree(0);
 }
 
 void move_left(double VXlim) {
     Left_Thruster(0);
-    if ((Velocity_X() > (-VXlim)) && RT_OK) {
+    if (Velocity_X() > (-VXlim)) {
+
+    
+    if  (RT_OK) {
         stay_zero_degree();
         Right_Thruster((VXlim + fmin(0, Velocity_X())) / VXlim);
-    } else if ((Velocity_X() < VXlim) && (!RT_OK) && MT_OK) {
-        stay_X_degree(360 - 90);
+    } else if ((!RT_OK) && MT_OK) {
         Main_Thruster((VXlim - fmax(0,Velocity_X())) / VXlim);
+        stay_X_degree(360-45);
+        
     } else {
         // Exceeded velocity limit, brake
         Right_Thruster(0);
         Left_Thruster(fabs(VXlim - Velocity_X()));
     }
+    }
 }
 
 void move_right(double VXlim) {
     Right_Thruster(0);
-    if ((Velocity_X() < VXlim) && LT_OK) {
+    if ((Velocity_X() < VXlim)){
+    if (LT_OK) {
         stay_zero_degree();
         Left_Thruster((VXlim - fmax(0, Velocity_X())) / VXlim);
-    } else if ((Velocity_X() < VXlim) && (!LT_OK) && MT_OK) {
-        stay_X_degree(90);
+    } else if ((!LT_OK) && MT_OK) {
         Main_Thruster((VXlim - fmax(0, Velocity_X())) / VXlim);
+        stay_X_degree(45);
+        
     } else {
         Left_Thruster(0);
         Right_Thruster(fabs(VXlim - Velocity_X()));
+    }
     }
 }
 
@@ -324,13 +335,17 @@ void Lander_Control(void) {
     // approaches landing. You may need to be more conservative
     // with velocity limits when things fail.
 
-    VXlim = 25 * fabs(PIDX_realizeInc(PLAT_X) - PLAT_X) / 512;
-    VYlim = -10 * fabs(PIDY_realizeInc(PLAT_Y) - PLAT_Y) / 512;
+    VXlim = 5 * fabs(PIDX_realizeInc(PLAT_X) - PLAT_X) / 512;
+    VYlim = -15 * fabs(PIDY_realizeInc(PLAT_Y) - PLAT_Y) / 512;
 
     printf("VXLim: ");
     printf("%.2f\n", VXlim);
+    printf("VX: ");
+    printf("%.2f\n", Velocity_X());
     printf("VYLim: ");
     printf("%.2f\n", VYlim);
+    printf("VY: ");
+    printf("%.2f\n", Velocity_Y());
     printf("PositionX: ");
     printf("%.2f\n", fabs(Position_X() - PLAT_X));
     printf("PositionY: ");
@@ -340,7 +355,7 @@ void Lander_Control(void) {
     // Ensure we will be OVER the platform when we land
     if (fabs(PLAT_X - Position_X()) / fabs(Velocity_X()) > 1.25 * 
         fabs(PLAT_Y - Position_Y()) / fabs(Velocity_Y()))
-        VYlim = 0;
+        VYlim = -0.05;
 
     // IMPORTANT NOTE: The code below assumes all components working
     // properly. IT MAY OR MAY NOT BE USEFUL TO YOU when components
@@ -357,7 +372,7 @@ void Lander_Control(void) {
 
     // Module is oriented properly, check for horizontal position
     // and set thrusters appropriately.
-    if (fabs(Position_X() - PLAT_X) > 10){
+    if (fabs(Position_X() - PLAT_X) > 30){
         if ( Position_X() > PLAT_X){
             // Lander is to the LEFT of the landing platform, use Right thrusters to move
             // lander to the left.
@@ -424,7 +439,9 @@ void Safety_Override(void)
     // safety override (close to the landing platform
     // the Control_Policy() should be trusted to
     // safely land the craft)
-    if (fabs(PLAT_X - Position_X()) < 150 && fabs(PLAT_Y - Position_Y()) < 150)
+    if (fabs(PLAT_X - Position_X()) < 150)
+        return;
+    if (fabs(PLAT_Y - Position_Y()) < 150)
         return;
 
     // Determine the closest surfaces in the direction
@@ -453,13 +470,12 @@ void Safety_Override(void)
     // what is it?
     if (dmin < DistLimit * fmax(.25, 
                                 fmin(fabs(Velocity_X()) / 5.0, 1))) { // Too close to a surface in the horizontal direction
-        stay_zero_degree();
+        //stay_zero_degree();
         if (Velocity_X() > 0){
             if (LT_OK && RT_OK){
                 Right_Thruster(1.0);
                 Left_Thruster(0.0);
             } else {
-                stay_X_degree(360-20);
           }
         }
     } else {
@@ -467,7 +483,6 @@ void Safety_Override(void)
           Left_Thruster(1.0);
           Right_Thruster(0.0);
       } else {
-          stay_X_degree(20);
       }
     }
 
@@ -489,7 +504,7 @@ void Safety_Override(void)
         }
     }
     if (dmin<DistLimit) {   // Too close to a surface in the horizontal direction
-        stay_zero_degree();
+        //stay_zero_degree();
         if (Velocity_Y() > 2.0) {
             Main_Thruster(0.0);
         } else {
