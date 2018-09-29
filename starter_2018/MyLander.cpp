@@ -216,11 +216,11 @@ float PIDX_realizeInc(float optimalPosition) {
 
 
 void stay_X_degree(double X) {
-    if (fabs(Angle()-X) > 1) {
-        if (X >= 270 && Angle()<=90) Rotate(-Angle()+X-360);
-        else if (Angle() >= X + 180) Rotate(360 - Angle() + X);
-        else Rotate(X - Angle());
-    return;
+    if (fabs(Angle()-X)>2){
+        double left = int(360 - Angle() + X) % 360;
+        double right = int(360 - X + Angle()) % 360;
+        if (left < right) Rotate(left);
+        else Rotate(-right);
     }
 }
 
@@ -229,13 +229,16 @@ void stay_zero_degree(void){
 }
 
 void Robust_Right_Thruster(double speed) {
-    printf("Want to active Right Thruster\n");
+    //printf("Want to active Right Thruster\n");
     Left_Thruster(0);
     if (Velocity_X()>(speed)) {
     if  (RT_OK) {
-        stay_zero_degree();
-        if (!MT_OK) stay_X_degree(360 - 20);
-        if (Angle()>270) return;
+
+        if (!MT_OK) {
+            if (LT_OK && Angle()>265 && Angle()<335) stay_X_degree(262);
+            else stay_X_degree(30);
+        }
+        if (Angle()>270 && Angle()<320) return;
         Right_Thruster(speed);
     } else if ((!RT_OK) && MT_OK) {
         Main_Thruster(speed);
@@ -250,13 +253,16 @@ void Robust_Right_Thruster(double speed) {
 }
 
 void Robust_Left_Thruster(double speed) {
-    printf("Want to active Left Thruster\n");
+    //printf("Want to active Left Thruster\n");
     Right_Thruster(0);
     if (Velocity_X()<speed){
     if (LT_OK) {
-        stay_zero_degree();
-        if (!MT_OK) stay_X_degree(20);
-        if (Angle()<90) return;
+
+        if (!MT_OK) {
+            if (RT_OK && Angle()>25 && Angle()<115) stay_X_degree(98);
+            else stay_X_degree(360-30);
+        }
+        if (Angle()<90 && Angle()>40 ) return;
         Left_Thruster(speed);
     } else if (MT_OK) {
         stay_X_degree(90);
@@ -270,20 +276,11 @@ void Robust_Left_Thruster(double speed) {
 
 void Robust_Main_Thruster(double VYlim){
     if (Velocity_Y() < VYlim){
-        printf("Want to active main Thruster\n");
-        //printf("MY VYlim is: %.2f\n",VYlim);
-        //printf("MY Velocity_Y is: %.2f\n",Velocity_Y());
-        //if (Angle()>45 && Angle() <91 && RT_OK && !MT_OK){
-        //    Right_Thruster(0.3);
-        //} else if (Angle()<1 && Angle() >315 && LT_OK && !MT_OK){
-        //    Left_Thruster(0.3);
-        //}
-        //else 
-        if (MT_OK){
-            //if ((Angle() > 45) || Angle() < 315) 
+        //printf("Want to active main Thruster\n");
+        if (MT_OK){ 
             if (Position_X()<PLAT_X) stay_X_degree(8);
             else stay_X_degree(352);
-            Main_Thruster(VYlim);
+            Main_Thruster(1);
         } else if (LT_OK && Position_X()<PLAT_X){
             stay_X_degree(278);
             Right_Thruster(0);
@@ -388,12 +385,9 @@ if (!MT_OK) {
     VYlim = VYlim / 2 ;
     VXlim = VXlim / 2 ;
 }
-    printf("Too_close is:%.2f\n",Too_close);
-    if (fabs(Position_X() - PLAT_X)<80) Too_close =1;
-    if (Too_close == 0) {
-        VYlim = 0.8;
+    //printf("Too_close is:%.2f\n",Too_close);
+    //if (Too_close == 0) VYlim = 0.7;
         
-        }
     
  // Ensure we will be OVER the platform when we land
  if (fabs(PLAT_X-Position_X())/fabs(Velocity_X())>1.25*fabs(PLAT_Y-Position_Y())/fabs(Velocity_Y())) VYlim=0;
@@ -402,10 +396,10 @@ if (!MT_OK) {
     printf("%.2f\n", VXlim);
     printf("VX: ");
     printf("%.2f\n", Velocity_X());
-    */
+    
     printf("PositionX: ");
     printf("%.2f\n", fabs(Position_X() - PLAT_X));
-    /*
+    
     printf("PositionY: ");
     printf("%.2f\n", fabs(Position_Y() - PLAT_Y));
 */
@@ -418,6 +412,7 @@ if (!MT_OK) {
     if (fabs(Position_Y() - PLAT_Y) < 25){
             stay_zero_degree();
             printf("Landing\n");
+            //if (MT_OK) Robust_Main_Thruster(0); 
             return;
     }
     
@@ -437,7 +432,6 @@ if (!MT_OK) {
     // Module is oriented properly, check for horizontal position
     // and set thrusters appropriately.
 if (fabs(Position_X()-PLAT_X) > 50){
-    Too_close == 1;
     if (Position_X()>PLAT_X)
  {
   // Lander is to the LEFT of the landing platform, use Right thrusters to move
@@ -468,15 +462,18 @@ if (fabs(Position_X()-PLAT_X) > 50){
  // Vertical adjustments. Basically, keep the module below the limit for
  // vertical velocity and allow for continuous descent. We trust
  // Safety_Override() to save us from crashing with the ground.
- 
+ /*
  printf("VYLim: ");
 printf("%.2f\n", VYlim);
     printf("VY: ");
     printf("%.2f\n", Velocity_Y());
-    
- //if (Velocity_Y()<VYlim) 
- Robust_Main_Thruster(VYlim);
- //else Robust_Main_Thruster(VYlim);
+*/
+
+
+
+ if (Velocity_Y()>1) 
+    Robust_Main_Thruster(VYlim);
+ else Robust_Main_Thruster(VYlim);
  
 }
 
@@ -520,16 +517,17 @@ void Safety_Override(void)
     Vmag = Velocity_X() * Velocity_X();
     Vmag += Velocity_Y() * Velocity_Y();
 
-    DistLimit = fmax(75, Vmag);
-
+    DistLimit = fmax(80, Vmag);
+    if ((fabs(PLAT_X - Position_X()) < 150)&&(fabs(PLAT_Y - Position_Y())) < 200)
+        return;
     // If we're close to the landing platform, disable
     // safety override (close to the landing platform
     // the Control_Policy() should be trusted to
     // safely land the craft)
-    if (fabs(PLAT_X - Position_X()) < 150)
-        return;
-    if (fabs(PLAT_Y - Position_Y()) < 150)
-        return;
+   // if (fabs(PLAT_X - Position_X()) < 100)
+    //    return;
+    //if (fabs(PLAT_Y - Position_Y()) < 100)
+    //    return;
 
     // Determine the closest surfaces in the direction
     // of motion. This is done by checking the sonar
@@ -538,7 +536,7 @@ void Safety_Override(void)
     // with the smallest registered distance
 
     // Horizontal direction.
-    if (fabs(Position_X()-PLAT_X) > 150) return;
+
     dmin=100000;
     if (Velocity_X() > 0)
     {
@@ -560,11 +558,10 @@ void Safety_Override(void)
         // Too close to a surface in the horizontal direction
         //stay_zero_degree();
         if (Velocity_X() > 0){
-                stay_zero_degree();
-            
+
             Robust_Right_Thruster(2.0);
         } else {
-            stay_zero_degree();
+
             Robust_Left_Thruster(2.0);
         
         }
@@ -588,7 +585,7 @@ void Safety_Override(void)
         }
     }
     if (dmin<DistLimit) {   // Too close to a surface in the horizontal direction
-        stay_zero_degree();
+
         Too_close = 0;
         if (Velocity_Y() > 2.0) {
             Robust_Main_Thruster(0);
