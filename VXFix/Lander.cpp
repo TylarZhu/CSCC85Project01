@@ -167,8 +167,12 @@ using namespace std;
 
 double current_velocityX = 0.0;
 double past_velocityX = 0.0;
+double current_total_p = 0.0;
+double past_total_p = 0.0;
+int n = 1;
+/*
 double current_velocitY = 0.0;
-double past_velocityY = 0.0;
+double past_velocityY = 0.0;*/
 double current_position = 0.0;
 double past_position = 0.0;
 double current_T = 0.0;
@@ -176,7 +180,21 @@ double past_T = 0.0;
 double current_a = 0.0;
 double past_a = 0.0;
 
+double average_position_X(){
+  if(n < 10) {
+    current_total_p += Position_X(); 
+    n += 1;
+    return past_total_p;
+  } else {
+    current_total_p /= 10;
+    n = 1;
+    past_total_p = current_total_p;
+    return current_total_p;
+  }
+}
+
 double current_vx() {
+/*
   bool fail = false;
   double sc = 0.0;
   double vc = 0.0;
@@ -218,9 +236,22 @@ double current_vx() {
   cout << "sc: " << sc << endl;
   cout << "vc: " << vc << endl;
   cout << "Ev: " << cv << endl;
-  //cout << "Sv: " << Velocity_X() << endl;
-  cout << "------------------------------" << endl;
-  return cv;
+*/
+  
+  //past_position = current_position;
+  //current_position = Position_X();
+  if(n < 9) {
+    average_position_X();
+  } else {
+    past_position = current_position;
+    current_position = average_position_X(); 
+    cout << "N: " << n << endl;
+    cout << "average P: " << average_position_X() << endl;
+    cout << "Ev: " << (past_position - current_position) << endl;
+    cout << "Sv: " << Velocity_X() << endl;
+    cout << "------------------------------" << endl;
+  }
+  return 1;
 }
 
 void Lander_Control(void)
