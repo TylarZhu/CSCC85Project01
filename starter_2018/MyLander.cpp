@@ -166,6 +166,206 @@ PIDX_realizeInc(PLAT_X) - PLAT_X)
 
 using namespace std;
 
+
+
+bool X_OK=true,Y_OK=true,VX_OK=true,VY_OK=true,TH_OK=true,Sonar_OK=true,Angle_Flag=true;
+
+int T=15,l=0,n=1,Rotate_n=0,XT=15;
+
+double Position_Y_test=0;
+
+double S_X[30],X_Current=0,X_VX_Current=0,X_Past=0,RMS_X=0,RMS_Past_X=0,Start_X=0,Position_X_N,RMS_XT=0,RMS_VXT=0,sp_px=0.37,bound_x=5;
+double S_Y[30],Y_Current=0,Y_VY_Current=0,Y_Past=0,RMS_Y=0,RMS_Past_Y=0,Start_Y=0,Position_Y_N,RMS_YT=0,RMS_VYT=0,sp_py=0.37,bound_y=5;
+double S_VX[30],VX_Current=0,VX_X_Current=0,VX_Past=0,VX_X_Past=0,RMS_VX=0,RMS_Past_VX=0,Start_VX=0,Velocity_X_N,sp_vx=0.37,bound_vx=10;
+double S_VY[30],VY_Current=0,VY_Y_Current=0,VY_Past=0,VY_Y_Past=0,RMS_VY=0,RMS_Past_VY=0,Start_VY=0,Velocity_Y_N,sp_vy=0.80,bound_vy=10;
+double S_TH[30],TH_Current=0,TH_Past=0,RMS_TH=0,RMS_Past_TH=0,Start_TH=0,TH_Position_N,TH_PAST_Node=0,RMS_THT=0,Rotate_sp=0.442,bound_th=2;
+
+void Velocity_A_X(void){
+    double temp=0;
+    if(l<T){
+        VX_X_Current+=Position_X();
+        
+        S_VX[l]=Velocity_X();
+        VX_Current+=Velocity_X();
+        //        l=l+1;
+        return;
+    }else{
+        VX_X_Current=VX_X_Current/l;
+        VX_Current=VX_Current/l;
+        
+        //To calculation RMS
+        for(int i=0;i<l;i++){
+            RMS_VXT=RMS_VXT+(S_VX[i]-VX_Current)*(S_VX[i]-VX_Current);
+        }
+        
+        RMS_VXT=RMS_VXT/l;
+        RMS_VXT=sqrtf(RMS_VXT);
+        RMS_VX=RMS_VXT;
+        
+        //compare two step RMS
+        //        n=n+1;
+        if(n<=2) temp = 0;
+        else temp=fabs(RMS_VX-RMS_Past_VX)/fabs(RMS_Past_VX);
+        cout << "RMS_PAST_VX/RMS_VX= " << temp << endl;
+        
+        RMS_Past_VX=RMS_VX;
+        
+        /*       if(temp<1 and n<3) {
+         Velocity_X_N=VX_Current;
+         printf("VX_Start =......... %f\n",Velocity_X_N);
+         }else{
+         Velocity_X_N =(X_Current-X_Past)/sp_vx;
+         }*/
+        
+        if(temp>bound_vx && VX_OK) {
+            VX_OK = false;
+            cout << "Velocity X: Fail...." << endl;
+        }
+        
+        if(!VX_OK){
+            Velocity_X_N =(VX_X_Current-VX_X_Past)/sp_vx;//sp is the sampling time
+        }
+        
+        
+        
+        /*
+         if(RMS_VX>2 and VX_OK) {
+         VX_OK = false;
+         Start_VX = VX_Past;
+         printf("VX: Fail....\n");
+         printf("Start VX: %f\n",Start_VX);
+         }*/
+        
+        RMS_VXT=0;
+        VX_Current=Velocity_X();
+        S_VX[0]=Velocity_X();
+        VX_X_Past=VX_X_Current;
+        VX_Past=VX_Current;
+        
+        //               l=1;
+        
+        return;
+    }
+}
+
+
+void Velocity_A_Y(void){
+    double temp=0;
+    if(l<T){
+        VY_Y_Current+=Position_Y();
+        
+        S_VY[l]=Velocity_Y();
+        VY_Current+=Velocity_Y();
+        //        l=l+1;
+        return;
+    }else{
+        VY_Y_Current=VY_Y_Current/l;
+        VY_Current=VY_Current/l;
+        
+        //To calculation RMS
+        for(int i=0;i<l;i++){
+            RMS_VYT=RMS_VYT+(S_VY[i]-VY_Current)*(S_VY[i]-VY_Current);
+        }
+        
+        RMS_VYT=RMS_VYT/l;
+        RMS_VYT=sqrtf(RMS_VYT);
+        RMS_VY=RMS_VYT;
+        
+        if(n<=2) temp = 0;
+        else temp=fabs(RMS_VY-RMS_Past_VY)/fabs(RMS_Past_VY);
+        cout << "RMS_PAST_VX/RMS_VX= " << temp << endl;
+        
+        RMS_Past_VY=RMS_VY;
+        
+        if(temp>bound_vy && VY_OK) {
+            VY_OK = false;
+            cout << "Velocity Y: Fail...." << endl;
+        }
+        
+        if(!VY_OK){
+            Velocity_Y_N =(VY_Y_Current-VY_Y_Past)*(-1.0)/sp_vy;//sp is the sampling time
+        }
+        VY_Past=VY_Current;
+        RMS_VYT=0;
+        VY_Current=Velocity_Y();
+        S_VY[0]=Velocity_Y();
+        VY_Y_Past=VY_Y_Current;
+        
+        
+        //               l=1;
+        
+        return;
+    }
+}
+
+void Position_A_TH(void){
+    double temp=0;
+    double Angle_temp=0;
+    if(l<T){
+        //Angle convert to 360---> -angle;
+        Angle_temp=Angle();
+        if(fabs(Angle_temp-S_TH[l-1])>90){
+            if(S_TH[l-1]<180) {
+                Angle_temp=Angle_temp-360;
+            }else{
+                Angle_temp=360+Angle_temp;
+            }
+        }
+        S_TH[l]=Angle_temp;
+        TH_Current+=Angle_temp;
+        //l=l+1;
+        return;
+    }else{
+        TH_Current=TH_Current/l;
+        
+        //To calculation RMS
+        for(int i=0;i<l;i++){
+            RMS_THT=RMS_THT+(S_TH[i]-TH_Current)*(S_TH[i]-TH_Current);
+        }
+        RMS_THT=RMS_THT/l;
+        RMS_THT=sqrtf(RMS_THT);
+        RMS_TH=RMS_THT;
+        
+        //n=n+1;
+        if(n<=2) temp = 0;
+        else temp=fabs(RMS_TH-RMS_Past_TH)/fabs(RMS_Past_TH);
+        //cout << "RMS_PAST_X/RMS_X= " << temp << endl;
+        
+        RMS_Past_TH=RMS_TH;
+        if(temp>bound_th && TH_OK) {
+            TH_OK = false;
+            Start_TH = TH_Past;
+            if(Start_TH<0) Start_TH=360+Start_TH;
+            if(Start_TH>360) Start_TH=Start_TH-360;
+            cout << "TH: Fail...." << endl;
+            cout << "Start Position TH: " << Start_TH << endl;
+        }
+        
+        
+        if(!TH_OK){
+            TH_Position_N = Start_TH + Rotate_sp;
+            if(TH_Position_N<0) TH_Position_N=360+TH_Position_N;
+            if(TH_Position_N>360) TH_Position_N=TH_Position_N-360;
+        }else{
+            
+            TH_Position_N=TH_Current;
+            if(TH_Position_N<0) TH_Position_N=360+TH_Position_N;
+            if(TH_Position_N>360) TH_Position_N=TH_Position_N-360;
+        }
+        
+        
+        RMS_THT=0;
+        TH_Past=TH_Current;
+        Angle_temp=Angle();
+        TH_Current=Angle_temp;
+        S_TH[0]=Angle_temp;
+        
+        //l=1;
+        return;
+    }
+}
+
+
 void Exception(double, double);
 void handelLeftThursterFail(double, double); 
 double Too_close;
@@ -216,9 +416,9 @@ float PIDX_realizeInc(float optimalPosition) {
 
 
 void stay_X_degree(double X) {
-    if (fabs(Angle()-X)>2){
-        double left = int(360 - Angle() + X) % 360;
-        double right = int(360 - X + Angle()) % 360;
+    if (fabs(TH_Position_N-X)>2){
+        double left = int(360 - TH_Position_N + X) % 360;
+        double right = int(360 - X + TH_Position_N) % 360;
         if (left < right) Rotate(left);
         else Rotate(-right);
     }
@@ -235,10 +435,10 @@ void Robust_Right_Thruster(double speed) {
     if  (RT_OK) {
 
         if (!MT_OK) {
-            if (LT_OK && Angle()>265 && Angle()<335) stay_X_degree(262);
+            if (LT_OK && TH_Position_N>265 && TH_Position_N<335) stay_X_degree(262);
             else stay_X_degree(30);
         }
-        if (Angle()>270 && Angle()<320) return;
+        if (TH_Position_N>270 && TH_Position_N<320) return;
         Right_Thruster(speed);
     } else if ((!RT_OK) && MT_OK) {
         Main_Thruster(speed);
@@ -259,10 +459,10 @@ void Robust_Left_Thruster(double speed) {
     if (LT_OK) {
 
         if (!MT_OK) {
-            if (RT_OK && Angle()>25 && Angle()<115) stay_X_degree(98);
+            if (RT_OK && TH_Position_N>25 && TH_Position_N<115) stay_X_degree(98);
             else stay_X_degree(360-30);
         }
-        if (Angle()<90 && Angle()>40 ) return;
+        if (TH_Position_N<90 && TH_Position_N>40 ) return;
         Left_Thruster(speed);
     } else if (MT_OK) {
         stay_X_degree(90);
@@ -284,12 +484,12 @@ void Robust_Main_Thruster(double VYlim){
         } else if (LT_OK && Position_X()<PLAT_X){
             stay_X_degree(278);
             Right_Thruster(0);
-            if (Angle()<90) return;
+            if (TH_Position_N<90) return;
             Left_Thruster(1);
         } else if (RT_OK){
             stay_X_degree(82);
             Left_Thruster(0);
-            if (Angle()>270) return;
+            if (TH_Position_N>270) return;
             Right_Thruster(1);
         }
     }else{
@@ -352,6 +552,25 @@ void Lander_Control(void) {
     double VXlim;
     double VYlim;
 
+     /******Sensor Fail*************/
+  if(l<T){//T is the period for sampling
+
+      Velocity_A_X();
+      Velocity_A_Y();
+      Position_A_TH();
+      l=l+1; //l is the sampling length
+  }else{
+      n=n+1;//test first
+
+      Velocity_A_X();
+      Velocity_A_Y();
+      Position_A_TH();
+      l=1;
+  }
+    
+    if(VX_OK)Velocity_X_N=Velocity_X();//VX_Past;
+    if(VY_OK)Velocity_Y_N=Velocity_Y();
+    if(TH_OK)TH_Position_N=Angle();
     
     
     /*PIDX_realizeInc
@@ -390,7 +609,7 @@ if (!MT_OK) {
         
     
  // Ensure we will be OVER the platform when we land
- if (fabs(PLAT_X-Position_X())/fabs(Velocity_X())>1.25*fabs(PLAT_Y-Position_Y())/fabs(Velocity_Y())) VYlim=0;
+ if (fabs(PLAT_X-Position_X())/fabs(Velocity_X_N)>1.25*fabs(PLAT_Y-Position_Y())/fabs(Velocity_Y_N)) VYlim=0;
 /*
     printf("VXLim: ");
     printf("%.2f\n", VXlim);
@@ -437,24 +656,24 @@ if (fabs(Position_X()-PLAT_X) > 50){
   // Lander is to the LEFT of the landing platform, use Right thrusters to move
   // lander to the left.
   Left_Thruster(0);	// Make sure we're not fighting ourselves here!
-  if (Velocity_X()>(-VXlim)) 
-    Robust_Right_Thruster((VXlim+fmin(0,Velocity_X()))/VXlim);
+  if (Velocity_X_N>(-VXlim)) 
+    Robust_Right_Thruster((VXlim+fmin(0,Velocity_X_N))/VXlim);
   else
   {
    // Exceeded velocity limit, brake
    Right_Thruster(0);
-   Robust_Left_Thruster(fabs(VXlim-Velocity_X()));
+   Robust_Left_Thruster(fabs(VXlim-Velocity_X_N));
   }
  }
  else
  {
   // Lander is to the RIGHT of the landing platform, opposite from above
   Right_Thruster(0);
-  if (Velocity_X()<VXlim) Robust_Left_Thruster((VXlim-fmax(0,Velocity_X()))/VXlim);
+  if (Velocity_X_N<VXlim) Robust_Left_Thruster((VXlim-fmax(0,Velocity_X_N))/VXlim);
   else
   {
    Left_Thruster(0);
-   Robust_Right_Thruster(fabs(VXlim-Velocity_X()));
+   Robust_Right_Thruster(fabs(VXlim-Velocity_X_N));
   }
  }
 }
@@ -471,7 +690,7 @@ printf("%.2f\n", VYlim);
 
 
 
- if (Velocity_Y()>1) 
+ if (Velocity_Y_N>1) 
     Robust_Main_Thruster(VYlim);
  else Robust_Main_Thruster(VYlim);
  
@@ -514,8 +733,8 @@ void Safety_Override(void)
     // Establish distance threshold based on lander
     // speed (we need more time to rectify direction
     // at high speed)
-    Vmag = Velocity_X() * Velocity_X();
-    Vmag += Velocity_Y() * Velocity_Y();
+    Vmag = Velocity_X_N * Velocity_X_N;
+    Vmag += Velocity_Y_N * Velocity_Y_N;
 
     DistLimit = fmax(80, Vmag);
     if ((fabs(PLAT_X - Position_X()) < 150)&&(fabs(PLAT_Y - Position_Y())) < 200)
@@ -538,7 +757,7 @@ void Safety_Override(void)
     // Horizontal direction.
 
     dmin=100000;
-    if (Velocity_X() > 0)
+    if (Velocity_X_N > 0)
     {
         for (int i = 5; i < 14; i++) {
             if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin) {
@@ -554,10 +773,10 @@ void Safety_Override(void)
     // Determine whether we're too close for comfort. There is a reason
     // to have this distance limit modulated by horizontal speed...
     // what is it?
-    if (dmin < DistLimit * fmax(.25, fmin(fabs(Velocity_X()) / 5.0, 1))) { 
+    if (dmin < DistLimit * fmax(.25, fmin(fabs(Velocity_X_N) / 5.0, 1))) { 
         // Too close to a surface in the horizontal direction
         //stay_zero_degree();
-        if (Velocity_X() > 0){
+        if (Velocity_X_N > 0){
 
             Robust_Right_Thruster(2.0);
         } else {
@@ -569,7 +788,7 @@ void Safety_Override(void)
 
     // Vertical direction
     dmin=100000;
-    if (Velocity_Y()>5) {      // Mind this! there is a reason for it...
+    if (Velocity_Y_N>5) {      // Mind this! there is a reason for it...
         for (int i=0; i<5; i++) {
             if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
                 dmin = SONAR_DIST[i];
@@ -587,7 +806,7 @@ void Safety_Override(void)
     if (dmin<DistLimit) {   // Too close to a surface in the horizontal direction
 
         Too_close = 0;
-        if (Velocity_Y() > 2.0) {
+        if (Velocity_Y_N > 2.0) {
             Robust_Main_Thruster(0);
         } else {
             Robust_Main_Thruster(2.0);
