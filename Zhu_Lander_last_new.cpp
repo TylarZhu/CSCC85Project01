@@ -170,16 +170,16 @@ bool X_OK=true,Y_OK=true,VX_OK=true,VY_OK=true,TH_OK=true,Sonar_OK=true,Angle_Fl
 
 int T=15,l=0,n=1,Rotate_n=0,XT=15;
 
-float Position_Y_test=0;
+double Position_Y_test=0;
 
-float S_X[30],X_Current=0,X_VX_Current=0,X_Past=0,RMS_X=0,RMS_Past_X=0,Start_X=0,Position_X_N,RMS_XT=0,RMS_VXT=0,sp_px=0.37,bound_x=5;
-float S_Y[30],Y_Current=0,Y_VY_Current=0,Y_Past=0,RMS_Y=0,RMS_Past_Y=0,Start_Y=0,Position_Y_N,RMS_YT=0,RMS_VYT=0,sp_py=0.37,bound_y=5;
-float S_VX[30],VX_Current=0,VX_X_Current=0,VX_Past=0,VX_X_Past=0,RMS_VX=0,RMS_Past_VX=0,Start_VX=0,Velocity_X_N,sp_vx=0.37,bound_vx=10;
-float S_VY[30],VY_Current=0,VY_Y_Current=0,VY_Past=0,VY_Y_Past=0,RMS_VY=0,RMS_Past_VY=0,Start_VY=0,Velocity_Y_N,sp_vy=0.80,bound_vy=10;
-float S_TH[30],TH_Current=0,TH_Past=0,RMS_TH=0,RMS_Past_TH=0,Start_TH=0,TH_Position_N,TH_PAST_Node=0,RMS_THT=0,Rotate_sp=0.442,bound_th=2;
+double S_X[30],X_Current=0,X_VX_Current=0,X_Past=0,RMS_X=0,RMS_Past_X=0,Start_X=0,Position_X_N,RMS_XT=0,RMS_VXT=0,sp_px=0.37,bound_x=5;
+double S_Y[30],Y_Current=0,Y_VY_Current=0,Y_Past=0,RMS_Y=0,RMS_Past_Y=0,Start_Y=0,Position_Y_N,RMS_YT=0,RMS_VYT=0,sp_py=0.37,bound_y=5;
+double S_VX[30],VX_Current=0,VX_X_Current=0,VX_Past=0,VX_X_Past=0,RMS_VX=0,RMS_Past_VX=0,Start_VX=0,Velocity_X_N,sp_vx=0.37,bound_vx=10;
+double S_VY[30],VY_Current=0,VY_Y_Current=0,VY_Past=0,VY_Y_Past=0,RMS_VY=0,RMS_Past_VY=0,Start_VY=0,Velocity_Y_N,sp_vy=0.80,bound_vy=10;
+double S_TH[30],TH_Current=0,TH_Past=0,RMS_TH=0,RMS_Past_TH=0,Start_TH=0,TH_Position_N,TH_PAST_Node=0,RMS_THT=0,Rotate_sp=0.442,bound_th=2;
 
 void Position_A_X(void){
-    float temp=0;
+    double temp=0;
     if(l<T){
         S_X[l]=Position_X();
         X_Current+=Position_X();
@@ -213,7 +213,7 @@ void Position_A_X(void){
          Position_X_N = Position_X_N + VX_Current*sp_px;
          }*/
         
-        if(temp>bound_x and X_OK) {
+        if(temp>bound_x && X_OK) {
             X_OK = false;
             Position_X_N = X_Past;
             printf("Position X: Fail....\n");
@@ -239,7 +239,7 @@ void Position_A_X(void){
 }
 
 void Velocity_A_X(void){
-    float temp=0;
+    double temp=0;
     if(l<T){
         VX_X_Current+=Position_X();
         
@@ -275,7 +275,7 @@ void Velocity_A_X(void){
          Velocity_X_N =(X_Current-X_Past)/sp_vx;
          }*/
         
-        if(temp>bound_vx and VX_OK) {
+        if(temp>bound_vx && VX_OK) {
             VX_OK = false;
             printf("Position X: Fail....\n");
         }
@@ -308,7 +308,7 @@ void Velocity_A_X(void){
 
 
 void Position_A_Y(void){
-    float temp=0;
+    double temp=0;
     if(l<T){
         S_Y[l]=Position_Y();
         Y_Current+=Position_Y();
@@ -340,7 +340,7 @@ void Position_A_Y(void){
          }
          */
         
-        if(temp>bound_y and Y_OK) {
+        if(temp>bound_y && Y_OK) {
             Y_OK = false;
             Position_Y_N = Y_Past;
             printf("Position Y: Fail....\n");
@@ -373,7 +373,7 @@ void Position_A_Y(void){
 }
 
 void Velocity_A_Y(void){
-    float temp=0;
+    double temp=0;
     if(l<T){
         VY_Y_Current+=Position_Y();
         
@@ -408,7 +408,7 @@ void Velocity_A_Y(void){
          Velocity_Y_N =(VY_Y_Current-VY_Y_Past)*(-1.0)/sp_vy;
          }*/
         
-        if(temp>bound_vy and VY_OK) {
+        if(temp>bound_vy && VY_OK) {
             VY_OK = false;
             printf("Position Y: Fail....\n");
         }
@@ -441,8 +441,8 @@ void Velocity_A_Y(void){
 }
 
 void Position_A_TH(void){
-    float temp=0;
-    float Angle_temp=0;
+    double temp=0;
+    double Angle_temp=0;
     
     if(l<T){
         //Angle convert to 360---> -angle;
@@ -492,7 +492,7 @@ void Position_A_TH(void){
          if(TH_Position_N>360) TH_Position_N=TH_Position_N-360;
          }*/
         
-        if(temp>bound_th and TH_OK) {
+        if(temp>bound_th && TH_OK) {
             TH_OK = false;
             Start_TH = TH_Past;
             if(Start_TH<0) Start_TH=360+Start_TH;
@@ -620,12 +620,12 @@ void Robust_Right_Thruster(double power) {
      
     } else if (MT_OK_N) {//RT is failure. use MT(360-90) or LT (180)
         stay_X_degree(360-75);
-        if(Angle()>290 and Angle()<275) return;
+        if(Angle()>290 && Angle()<275) return;
         Main_Thruster(power);
     } else {
         // Exceeded velocity limit, brake
         stay_X_degree(360-175);
-        float x=Angle();
+        double x=Angle();
         printf("Want to active Right Thruster Ag = %f\n",x);
         if(Angle()>200 and Angle()<165){
             Left_Thruster(0);
@@ -644,7 +644,7 @@ void Robust_Left_Thruster(double power) {
     if  (LT_OK_N) {
         //LT is ok
         stay_X_degree(0);
-        float x=Angle();
+        double x=Angle();
         printf("Want to active Left Thruster Ag = %f\n",x);
 /*      if(Angle()<350 and Angle()>5){
             return;
@@ -654,15 +654,15 @@ void Robust_Left_Thruster(double power) {
         
     } else if (MT_OK_N) {//LT is failure. use MT(90) or RT (180)
         stay_X_degree(75);
-        if(Angle()>50 and Angle()<90) return;
+        if(Angle()>50 && Angle()<90) return;
         
         Main_Thruster(power);
     } else {
         // LT and MT is fail
         stay_X_degree(175);
-        float x=Angle();
+        double x=Angle();
         printf("Want to active Left Thruster Ag = %f\n",x);
-        if(Angle()<170 and Angle()>180){
+        if(Angle()<170 && Angle()>180){
             Left_Thruster(0);
             Right_Thruster(0);
             return;
@@ -687,9 +687,9 @@ void Robust_Main_Thruster(double power) {
             Main_Thruster(power);
     } else if (RT_OK_N) {//MT is failure. use RT(90)
         stay_X_degree(90);
-        float x=Angle();
+        double x=Angle();
         printf("Want to active Main Thruster Ag = %f\n",x);
-        if(Angle()>105 and Angle()<75){
+        if(Angle()>105 && Angle()<75){
             Left_Thruster(0);
             Right_Thruster(0);
             return;
@@ -699,7 +699,7 @@ void Robust_Main_Thruster(double power) {
     } else {
         // LT and MT is fail
         stay_X_degree(360-90);
-        if(Angle()>340 and Angle()<255){
+        if(Angle()>340 && Angle()<255){
             Right_Thruster(0);
             Left_Thruster(0);
             return;
@@ -710,7 +710,7 @@ void Robust_Main_Thruster(double power) {
     return;
 }
 
-float last_d=40;//land distance
+double last_d=40;//land distance
 
 //*******************zhu*******************//
 
@@ -855,7 +855,7 @@ void Lander_Control(void)
         Left_Thruster(0);
         Right_Thruster(0);
         Main_Thruster(0);
-        float x=Angle();
+        double x=Angle();
         printf("Want to Landing.... Ag = %f Y= %f\n",x,PLAT_Y-Position_Y_N);
         
         return;
